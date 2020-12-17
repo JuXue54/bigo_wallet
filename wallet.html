@@ -5,104 +5,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bigo Wallet</title>
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.3.0/dist/web3.min.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="css/wallet.css">
+    <!-- 引入组件库 -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.3.0/dist/web3.min.js"></script>
     <script>
         $(() => {
-            var web3Host = 'http://localhost',
-                web3Port = '8545';
-            var web3 = new Web3();
-            web3.setProvider(new web3.providers.HttpProvider(web3Host + ':' + web3Port));
-            if (!web3.Connected()) {
-                console.error("Ethereum - no conection to RPC server");
-            } else {
-                console.log("Ethereum - connected to RPC server");
-            }
-
-
-            // Functions
-            function getBalance() {
-                window.web3.eth.getBalance(window.account, function (err, balance) {
-                    console.log(parseFloat(window.web3.fromWei(balance, 'ether')));
-                });
-            }
-
-            function deployContract() {
-                window.currentIPFSHash = null;
-                window.currentData = null;
-
-                if (window.contractInstance) {
-                    console.error('Contract already deployed. Identifier: ', window.contractAddress);
-                    return false;
-                }
-
-                window.NotSoSimpleStorageContractObject.new(window.deployContractObject, function (err, contract) {
-                    if (err) {
-                        console.error('Error deploying contract: ', err);
-                    } else if (contract.address) {
-                        var contractAddress = contract.address;
-                        window.contractAddress = contractAddress;
-                        window.contractInstance = window.NotSoSimpleStorageContractObject.at(contractAddress);
-                        console.log('Contract deployed at address ', contractAddress);
-                    } else if (contract.transactionHash) {
-                        console.log("Waiting for contract to be deployed... Contract's transaction hash: ", contract.transactionHash);
-                    } else {
-                        console.error('Unknown error deploying contract');
-                    }
-                });
-            }
-
-            function sendTransaction(data) {
-                if (!window.contractInstance) {
-                    console.error('Make sure you deploy your contract first');
-                    return;
-                }
-
-                if (window.currentData == data) {
-                    console.error("Why would you override your contract's data with the same data, you dummy?");
-                    return;
-                }
-
-                window.contractInstance.set.sendTransaction(data, window.sendDataObject, function (err, result) {
-                    if (err) {
-                        console.error('Error sending data: ', err);
-                    } else {
-                        window.currentData = data;
-                        console.log('Successfully sent data. Transaction hash: ', result);
-                    }
-                });
-            }
-
-            function getData() {
-                if (!window.contractInstance) {
-                    console.error('Make sure you deploy your contract first');
-                    return;
-                }
-
-                window.contractInstance.get.call(function (err, result) {
-                    if (err) {
-                        console.error('Error getting data: ', err);
-                    } else if (result) {
-                        if (window.currentIPFSHash == result) {
-                            console.log("New data hasn't been mined yet. This is your current data: ", result);
-                            return;
+            var web3Host = 'http://3.238.241.32',
+                web3Port = '8802',
+                addr = "0x27dc55e55632303cf0a54256c727c4d88d4c067f";
+            new Vue({
+                el: '#app',
+                data: () => {
+                    return {
+                        web3: null,
+                        form: {
+                            address: addr,
+                            gas: 20,
+                            gasPrice: 1000000000,
+                            to: '',
+                            value: 0,
+                            data: ''
+                        },
+                        formA: {
+                            contract: ''
                         }
-
-                        window.currentIPFSHash = result
-                        var imageURL = window.ipfsDataHost + "/" + result;
-                        console.log('File: ', result);
-                        console.log(imageURL);
-                    } else {
-                        console.error('No data. Transaction not mined yet?');
                     }
-                });
-            }
+                },
+                mounted: () => {
+                    //connect to node
+                    web3 = new Web3(new Web3.providers.HttpProvider(web3Host + ':' + web3Port));
+                    if (web3.givenProvider == undefined || web3.givenProvider == null) {
+                        console.error("Bigo - no conection to RPC server");
+                    } else {
+                        console.log("Bigo - connected to RPC server");
+                    }
+                    //compute the balance of the designed account
+                    web3.eth.getBalance(addr, "latest", (err, balance) => {
+                        let bigo = parseFloat(web3.utils.fromWei(balance, 'ether'));
+                        $('#accountBalance').text(bigo);
+                    });
+                },
+                methods: {
+                    //transaction start
+                    onSubmit() {
+                        this.$prompt('请输入私钥', '提示', {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                        }).then(password => {
+                            let txHash = web3.eth.sendTransaction({
+                                from: this.form.address,
+                                gasPrice: this.form.gasPrice,
+                                gas: this.form.gas,
+                                to: this.form.to,
+                                value: this.form.value * 1000000000000000000,
+                                data: this.form.data
+                            }, password, (error, result) => {
+                                console.log(error);
+                                console.log(result);
+                                if (error != null) this.$message({
+                                    type: 'success',
+                                    message: '你的交易hash为: ' + txHash
+                                });
+                            });
+                        }).catch(() => {
+                            this.$message({
+                                type: 'info',
+                                message: '取消交易'
+                            });
+                        });
+                    },
+                    //compute the balance of the designed account
+                    balance() {
+                        if (web3.utils.isAddress(this.form.address)) {
+                            web3.eth.getBalance(this.form.address, "latest", (err, balance) => {
+                                if (err == null) {
+                                    let bigo = parseFloat(web3.utils.fromWei(balance, 'ether'));
+                                    $('#accountBalance').text(bigo);
+                                } else {
+                                    $('#accountBalance').text('error account');
+                                }
+                            });
+                        } else {
+                            $('#accountBalance').text('error account');
+                        }
+                    }
+                }
+            });
         });
     </script>
 </head>
 
 <body>
-
+    <el-container id="app">
+        <el-header>
+            wallet
+        </el-header>
+        <el-container>
+            <el-main>
+                <div class="input">
+                    <el-container>
+                        <el-main>
+                            <el-form ref="form" :model="form" label-width="80px">
+                                <el-form-item label="账户地址">
+                                    <el-input v-model="form.address" @blur="balance"></el-input>
+                                </el-form-item>
+                                <el-form-item label="To:">
+                                    <el-input v-model="form.to"></el-input>
+                                </el-form-item>
+                                <el-form-item label="value:">
+                                    <el-input v-model="form.value"></el-input>
+                                </el-form-item>
+                                <el-form-item label="gasPrice:">
+                                    <el-col :span="11">
+                                        <el-input type="number" placeholder="gas price" v-model="form.gasPrice" style="width: 100%;">
+                                            </el-date-picker>
+                                    </el-col>
+                                    <el-col class="line" :span="2">-</el-col>
+                                    <el-col :span="11">
+                                        <span class="demonstration">gas</span>
+                                        <el-slider v-model="form.gas" :min=1 :max=110></el-slider>
+                                    </el-col>
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-button type="primary" @click="onSubmit">提交交易</el-button>
+                                    <el-button>取消</el-button>
+                                </el-form-item>
+                            </el-form>
+                        </el-main>
+                        <el-footer>
+                            <el-form ref="formA" :model="formA" label-width="80px">
+                                <el-form-item label="deploy">
+                                    <el-input v-model="formA.contract"></el-input>
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-button>部署合约</el-button>
+                                </el-form-item>
+                            </el-form>
+                        </el-footer>
+                    </el-container>
+                </div>
+            </el-main>
+            <el-aside width="40%">
+                <div class="output">
+                    <div class="output_1">
+                        <div>余额：</div>
+                        <div id="accountBalance"></div>
+                    </div>
+                </div>
+            </el-aside>
+        </el-container>
+        <el-footer></el-footer>
+    </el-container>
 </body>
 
 </html>
