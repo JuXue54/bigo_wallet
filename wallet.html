@@ -15,9 +15,9 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.3.0/dist/web3.min.js"></script>
     <script>
         $(() => {
-            var web3Host = 'http://3.238.241.32',
+            var web3Host = '3.238.241.32',
                 web3Port = '8802',
-                addr = "0x27dc55e55632303cf0a54256c727c4d88d4c067f";
+                addr = "0x8Db0d0Dd0E1571c0d22F821fde96c7AF910A0b45";
             new Vue({
                 el: '#app',
                 data: () => {
@@ -25,11 +25,12 @@
                         web3: null,
                         form: {
                             address: addr,
-                            gas: 20,
+                            gas: 21000,
                             gasPrice: 1000000000,
-                            to: '',
+                            to: '0x0bD83bF0F8552c74dD0EE00911E70ab90183eDBd',
                             value: 0,
-                            data: ''
+                            data: '',
+                            privateKey: '0x991de187e4bebc7467e4ce2c1365be6cd74199634e356eea45018458113e4c2d'
                         },
                         formA: {
                             contract: ''
@@ -38,7 +39,7 @@
                 },
                 mounted: () => {
                     //connect to node
-                    web3 = new Web3(new Web3.providers.HttpProvider(web3Host + ':' + web3Port));
+                    web3 = new Web3(new Web3.providers.HttpProvider('http://' + web3Host + ':' + web3Port));
                     if (web3.givenProvider == undefined || web3.givenProvider == null) {
                         console.error("Bigo - no conection to RPC server");
                     } else {
@@ -53,30 +54,31 @@
                 methods: {
                     //transaction start
                     onSubmit() {
-                        this.$prompt('请输入私钥', '提示', {
-                            confirmButtonText: '确定',
-                            cancelButtonText: '取消',
-                        }).then(password => {
-                            let txHash = web3.eth.sendTransaction({
-                                from: this.form.address,
-                                gasPrice: this.form.gasPrice,
-                                gas: this.form.gas,
-                                to: this.form.to,
-                                value: this.form.value * 1000000000000000000,
-                                data: this.form.data
-                            }, password, (error, result) => {
-                                console.log(error);
-                                console.log(result);
-                                if (error != null) this.$message({
-                                    type: 'success',
-                                    message: '你的交易hash为: ' + txHash
-                                });
-                            });
-                        }).catch(() => {
-                            this.$message({
-                                type: 'info',
-                                message: '取消交易'
-                            });
+                        let tx = {
+                            from: this.form.address,
+                            gasPrice: this.form.gasPrice + '',
+                            gas: this.form.gas + '',
+                            to: this.form.to,
+                            value: String(this.form.value * 1000000000000000000),
+                            data: this.form.data
+                        };
+                        web3.eth.accounts.signTransaction(tx, this.form.privateKey, (error, signed) => {
+                            console.log(error);
+                            console.log(signed);
+                            if (error == null || error == undefined) {
+                                web3.eth.sendSignedTransaction(signed.rawTransaction).once('sent', receipt => {
+                                    this.$message({
+                                        type: 'info',
+                                        message: '交易发出'
+                                    })
+                                }).on('receipt', receipt => {
+                                    console.log(receipt);
+                                    this.$message({
+                                        type: 'info',
+                                        message: '交易成功'
+                                    })
+                                })
+                            }
                         });
                     },
                     //compute the balance of the designed account
@@ -120,7 +122,7 @@
                                 <el-form-item label="value:">
                                     <el-input v-model="form.value"></el-input>
                                 </el-form-item>
-                                <el-form-item label="gasPrice:">
+                                <el-form-item label="gasPrice(wei):">
                                     <el-col :span="11">
                                         <el-input type="number" placeholder="gas price" v-model="form.gasPrice" style="width: 100%;">
                                             </el-date-picker>
@@ -128,8 +130,11 @@
                                     <el-col class="line" :span="2">-</el-col>
                                     <el-col :span="11">
                                         <span class="demonstration">gas</span>
-                                        <el-slider v-model="form.gas" :min=1 :max=110></el-slider>
+                                        <el-slider v-model="form.gas" :min=21000 :max=1000000></el-slider>
                                     </el-col>
+                                </el-form-item>
+                                <el-form-item label="Private Key:">
+                                    <el-input v-model="form.privateKey"></el-input>
                                 </el-form-item>
                                 <el-form-item>
                                     <el-button type="primary" @click="onSubmit">提交交易</el-button>
