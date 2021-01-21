@@ -9,14 +9,14 @@
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <link rel="stylesheet" href="css/wallet.css">
     <!-- 引入组件库 -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+    <script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.3.0/dist/web3.min.js"></script>
     <script>
         $(() => {
-            var web3Host = '3.238.241.32',
-                web3Port = '8802',
+            var web3Host = '52.205.255.163',
+                web3Port = '8801',
                 addr = "0x8Db0d0Dd0E1571c0d22F821fde96c7AF910A0b45";
             new Vue({
                 el: '#app',
@@ -27,14 +27,18 @@
                             address: addr,
                             gas: 21000,
                             gasPrice: 1000000000,
-                            to: '0x0bD83bF0F8552c74dD0EE00911E70ab90183eDBd',
+                            to: null,
                             value: 0,
                             data: '',
                             privateKey: '0x991de187e4bebc7467e4ce2c1365be6cd74199634e356eea45018458113e4c2d'
                         },
                         formA: {
                             contract: ''
-                        }
+                        },
+                        formB: {
+                            address: ''
+                        },
+                        activeIndex: '1'
                     }
                 },
                 mounted: () => {
@@ -63,17 +67,20 @@
                             data: this.form.data
                         };
                         web3.eth.accounts.signTransaction(tx, this.form.privateKey, (error, signed) => {
+                            console.log(tx);
                             if (error == null || error == undefined) {
                                 web3.eth.sendSignedTransaction(signed.rawTransaction).once('sent', receipt => {
                                     this.$message({
                                         type: 'info',
                                         message: '交易发出'
                                     })
+                                    console.log(receipt);
                                 }).on('receipt', receipt => {
                                     this.$message({
                                         type: 'info',
                                         message: '交易成功'
                                     })
+                                    console.log(receipt);
                                 })
                             } else console.log(error);
                         });
@@ -92,6 +99,9 @@
                         } else {
                             $('#accountBalance').text('error account');
                         }
+                    },
+                    handleSelect(key, keyPath) {
+                        console.log(key, keyPath);
                     }
                 }
             });
@@ -102,65 +112,50 @@
 <body>
     <el-container id="app">
         <el-header>
-            wallet
+            Bigo Wallet
         </el-header>
-        <el-container>
-            <el-main>
-                <div class="input">
-                    <el-container>
-                        <el-main>
-                            <el-form ref="form" :model="form" label-width="80px">
-                                <el-form-item label="账户地址">
-                                    <el-input v-model="form.address" @blur="balance"></el-input>
-                                </el-form-item>
-                                <el-form-item label="To:">
-                                    <el-input v-model="form.to"></el-input>
-                                </el-form-item>
-                                <el-form-item label="value:">
-                                    <el-input v-model="form.value"></el-input>
-                                </el-form-item>
-                                <el-form-item label="gasPrice(wei):">
-                                    <el-col :span="11">
-                                        <el-input type="number" placeholder="gas price" v-model="form.gasPrice" style="width: 100%;">
-                                            </el-date-picker>
-                                    </el-col>
-                                    <el-col class="line" :span="2">-</el-col>
-                                    <el-col :span="11">
-                                        <span class="demonstration">gas</span>
-                                        <el-slider v-model="form.gas" :min=21000 :max=1000000></el-slider>
-                                    </el-col>
-                                </el-form-item>
-                                <el-form-item label="Private Key:">
-                                    <el-input v-model="form.privateKey"></el-input>
-                                </el-form-item>
-                                <el-form-item>
-                                    <el-button type="primary" @click="onSubmit">提交交易</el-button>
-                                    <el-button>取消</el-button>
-                                </el-form-item>
-                            </el-form>
-                        </el-main>
-                        <el-footer>
-                            <el-form ref="formA" :model="formA" label-width="80px">
-                                <el-form-item label="deploy">
-                                    <el-input v-model="formA.contract"></el-input>
-                                </el-form-item>
-                                <el-form-item>
-                                    <el-button>部署合约</el-button>
-                                </el-form-item>
-                            </el-form>
-                        </el-footer>
-                    </el-container>
-                </div>
-            </el-main>
-            <el-aside width="40%">
-                <div class="output">
-                    <div class="output_1">
-                        <div>余额：</div>
+
+        <el-main>
+            <el-tabs type="border-card">
+                <el-form ref="form" :model="form" label-width="80px">
+                    <el-form-item label="账户地址">
+                        <el-input v-model="form.address" @blur="balance"></el-input>
+                    </el-form-item>
+                    <el-form-item label="余额">
                         <div id="accountBalance"></div>
-                    </div>
-                </div>
-            </el-aside>
-        </el-container>
+                    </el-form-item>
+                    <el-form-item label="To:">
+                        <el-input v-model="form.to"></el-input>
+                    </el-form-item>
+                    <el-form-item label="value:">
+                        <el-input v-model="form.value"></el-input>
+                    </el-form-item>
+                    <el-form-item label="gasPrice(wei):">
+                        <el-col :span="11">
+                            <el-input type="number" placeholder="gas price" v-model="form.gasPrice" style="width: 100%;">
+                                </el-date-picker>
+                        </el-col>
+                        <el-col class="line" :span="2">-</el-col>
+                        <el-col :span="11">
+                            <span class="demonstration">gas</span>
+                            <el-slider v-model="form.gas" :min=21000 :max=1000000></el-slider>
+                        </el-col>
+                    </el-form-item>
+                    <el-form-item label="data">
+                        <el-input type="text" placeholder="bytecode" v-model="form.data" style="width: 100%">
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item label="Private Key:">
+                        <el-input v-model="form.privateKey"></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="onSubmit">提交交易</el-button>
+                        <el-button>取消</el-button>
+                    </el-form-item>
+                </el-form>
+            </el-tabs>
+        </el-main>
+
         <el-footer></el-footer>
     </el-container>
 </body>
