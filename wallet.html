@@ -16,7 +16,7 @@
     <script>
         $(() => {
             var web3Host = '52.205.255.163',
-                web3Port = '8801',
+                web3Port = '8802',
                 addr = "0x8Db0d0Dd0E1571c0d22F821fde96c7AF910A0b45";
             new Vue({
                 el: '#app',
@@ -64,6 +64,7 @@
                             gas: this.form.gas + '',
                             to: this.form.to,
                             value: String(this.form.value * 1000000000000000000),
+                            networkId: 100000,
                             data: this.form.data
                         };
                         web3.eth.accounts.signTransaction(tx, this.form.privateKey, (error, signed) => {
